@@ -1,100 +1,77 @@
-Certainly! Based on the Jira story: **Product Catalog API**, I will provide a Flask-based backend API skeleton for managing and querying a product catalog.
+Certainly! Here is a Python (Flask) backend implementation for a **Product Catalog API**. The API allows you to get a list of products, create a product, get details of a product, update, and delete a product.
 
 ```python
-from flask import Flask, jsonify, request, abort
+from flask import Flask, request, jsonify, abort
 
 app = Flask(__name__)
 
-# In-memory product store (replace with DB in practice)
-PRODUCTS = [
-    {
-        'id': 1,
-        'name': 'Example Product 1',
-        'description': 'Description of product 1.',
-        'price': 9.99,
-        'stock': 100,
-        'category': 'Electronics'
-    },
-    {
-        'id': 2,
-        'name': 'Sample Product 2',
-        'description': 'Description of product 2.',
-        'price': 14.99,
-        'stock': 50,
-        'category': 'Books'
-    }
-]
+# In-memory store for products
+products = {}
+product_id_seq = 1
 
-def find_product(pid):
-    return next((p for p in PRODUCTS if p['id'] == pid), None)
+def get_next_id():
+    global product_id_seq
+    _id = product_id_seq
+    product_id_seq += 1
+    return _id
+
+# Product schema: {id, name, description, price, stock}
+
+@app.route('/products', methods=['POST'])
+def create_product():
+    data = request.get_json()
+    if not data or 'name' not in data or 'price' not in data:
+        return jsonify({'error': 'Name and price are required.'}), 400
+
+    prod_id = get_next_id()
+    new_product = {
+        'id': prod_id,
+        'name': data['name'],
+        'description': data.get('description', ''),
+        'price': data['price'],
+        'stock': data.get('stock', 0)
+    }
+    products[prod_id] = new_product
+    return jsonify(new_product), 201
 
 @app.route('/products', methods=['GET'])
 def list_products():
-    """Get all products, optionally filter by category."""
-    category = request.args.get('category')
-    if category:
-        filtered = [p for p in PRODUCTS if p['category'].lower() == category.lower()]
-        return jsonify(filtered)
-    return jsonify(PRODUCTS)
+    return jsonify(list(products.values()))
 
-@app.route('/products/<int:pid>', methods=['GET'])
-def get_product(pid):
-    """Get product by its ID."""
-    product = find_product(pid)
-    if product:
-        return jsonify(product)
-    abort(404, description="Product not found")
+@app.route('/products/<int:prod_id>', methods=['GET'])
+def get_product(prod_id):
+    prod = products.get(prod_id)
+    if prod is None:
+        abort(404)
+    return jsonify(prod)
 
-@app.route('/products', methods=['POST'])
-def add_product():
-    """Add a new product."""
+@app.route('/products/<int:prod_id>', methods=['PUT'])
+def update_product(prod_id):
+    prod = products.get(prod_id)
+    if prod is None:
+        abort(404)
     data = request.get_json()
-    required = {'name', 'description', 'price', 'stock', 'category'}
-    if not data or not required.issubset(data.keys()):
-        abort(400, description="Missing product data")
-    new_id = max([p['id'] for p in PRODUCTS], default=0) + 1
-    product = {
-        'id': new_id,
-        'name': data['name'],
-        'description': data['description'],
-        'price': float(data['price']),
-        'stock': int(data['stock']),
-        'category': data['category']
-    }
-    PRODUCTS.append(product)
-    return jsonify(product), 201
+    for field in ['name', 'description', 'price', 'stock']:
+        if field in data:
+            prod[field] = data[field]
+    return jsonify(prod)
 
-@app.route('/products/<int:pid>', methods=['PUT'])
-def update_product(pid):
-    """Update product info."""
-    product = find_product(pid)
-    if not product:
-        abort(404, description="Product not found")
-    data = request.get_json()
-    for key in ['name', 'description', 'price', 'stock', 'category']:
-        if key in data:
-            product[key] = data[key]
-    return jsonify(product)
-
-@app.route('/products/<int:pid>', methods=['DELETE'])
-def delete_product(pid):
-    """Delete a product."""
-    product = find_product(pid)
-    if not product:
-        abort(404, description="Product not found")
-    PRODUCTS.remove(product)
-    return jsonify({'result': 'success'})
+@app.route('/products/<int:prod_id>', methods=['DELETE'])
+def delete_product(prod_id):
+    prod = products.pop(prod_id, None)
+    if prod is None:
+        abort(404)
+    return jsonify({'result': 'deleted'})
 
 if __name__ == '__main__':
     app.run(debug=True)
 ```
 
-**Features provided:**
-- List all products (`GET /products`)
-- Get product by ID (`GET /products/<id>`)
-- Filter products by category (`GET /products?category=Books`)
-- Add new product (`POST /products`)
-- Update product (`PUT /products/<id>`)
-- Delete product (`DELETE /products/<id>`)
+**Endpoints:**
+- `POST /products` : Create a product (requires `name` and `price`).
+- `GET /products` : List all products.
+- `GET /products/<id>` : Get details for a product.
+- `PUT /products/<id>` : Update an existing product.
+- `DELETE /products/<id>` : Delete a product.
 
-You can further expand this with authentication, database integration, pagination, or additional filtering as per requirements.
+Let me know if you need database integration, authentication, or additional fields!
