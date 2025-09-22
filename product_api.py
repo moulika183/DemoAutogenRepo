@@ -1,85 +1,80 @@
-Certainly! Below is a Python Flask backend implementation for a basic Product Catalog API. This includes standard endpoints for listing, retrieving, creating, updating, and deleting products. Products are stored in-memory for simplicity (replace with a database for production use).
+Certainly! Here's a Python Flask implementation for a "Product Catalog API". This implements basic CRUD operations on products (create, read, update, delete). For demonstration, it uses an in-memory data store (you can swap in a real database later).
+
+app.py
 
 ```python
-from flask import Flask, jsonify, request, abort
+from flask import Flask, request, jsonify, abort
 
 app = Flask(__name__)
 
-# In-memory product storage for demo purposes
-products = []
-product_id_counter = 1
+# In-memory 'database'
+products = {}
+next_id = 1
 
-# Helper: Find product by id
-def find_product(product_id):
-    for product in products:
-        if product['id'] == product_id:
-            return product
-    return None
+# Get all products
+@app.route('/api/products', methods=['GET'])
+def get_products():
+    return jsonify(list(products.values())), 200
 
-@app.route('/products', methods=['GET'])
-def list_products():
-    return jsonify(products), 200
-
-@app.route('/products/<int:product_id>', methods=['GET'])
+# Get a product by ID
+@app.route('/api/products/<int:product_id>', methods=['GET'])
 def get_product(product_id):
-    product = find_product(product_id)
+    product = products.get(product_id)
     if not product:
         abort(404, description="Product not found")
     return jsonify(product), 200
 
-@app.route('/products', methods=['POST'])
+# Create a new product
+@app.route('/api/products', methods=['POST'])
 def create_product():
-    global product_id_counter
+    global next_id
     data = request.get_json()
-    if not data or not data.get('name') or not data.get('price'):
-        abort(400, description="Name and price are required fields.")
-
+    if not data or 'name' not in data or 'price' not in data:
+        abort(400, description="Missing required fields: name, price")
     product = {
-        'id': product_id_counter,
+        'id': next_id,
         'name': data['name'],
-        'description': data.get('description', ''),
         'price': float(data['price']),
-        'stock': int(data.get('stock', 0))
+        'description': data.get('description', ''),
+        'category': data.get('category', '')
     }
-    products.append(product)
-    product_id_counter += 1
+    products[next_id] = product
+    next_id += 1
     return jsonify(product), 201
 
-@app.route('/products/<int:product_id>', methods=['PUT'])
+# Update an existing product
+@app.route('/api/products/<int:product_id>', methods=['PUT'])
 def update_product(product_id):
-    product = find_product(product_id)
+    data = request.get_json()
+    product = products.get(product_id)
     if not product:
         abort(404, description="Product not found")
 
-    data = request.get_json()
     product['name'] = data.get('name', product['name'])
+    product['price'] = float(data.get('price', product['price']))
     product['description'] = data.get('description', product['description'])
-    if 'price' in data:
-        product['price'] = float(data['price'])
-    if 'stock' in data:
-        product['stock'] = int(data['stock'])
+    product['category'] = data.get('category', product['category'])
+    products[product_id] = product
 
     return jsonify(product), 200
 
-@app.route('/products/<int:product_id>', methods=['DELETE'])
+# Delete a product
+@app.route('/api/products/<int:product_id>', methods=['DELETE'])
 def delete_product(product_id):
-    product = find_product(product_id)
+    product = products.pop(product_id, None)
     if not product:
         abort(404, description="Product not found")
-
-    products.remove(product)
     return jsonify({'message': 'Product deleted'}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
 ```
 
-**Features:**
+**How to use:**
+- `GET /api/products` — list all products
+- `GET /api/products/<id>` — get details of a product
+- `POST /api/products` — create a product (JSON: `{"name": "...", "price": ...}`)
+- `PUT /api/products/<id>` — update a product (partial or full update)
+- `DELETE /api/products/<id>` — delete a product
 
-- `GET /products` - List all products
-- `GET /products/<id>` - Get details for a single product
-- `POST /products` - Create new product (requires `name`, `price`)
-- `PUT /products/<id>` - Update an existing product
-- `DELETE /products/<id>` - Delete a product
-
-**Note:** For production-grade implementation, integrate with proper ORM/database, add authentication & validation layers, and handle pagination/filtering.
+You can expand with filtering, paging, authentication etc. as the story grows!
