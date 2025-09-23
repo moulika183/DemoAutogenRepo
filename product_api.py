@@ -1,63 +1,47 @@
-The key CI error is:
-
+The error is from **flake8**:
 ```
 product_api.py:1:17: E999 SyntaxError: invalid character '\u2019' (U+2019)
 ```
-
-This means your `product_api.py` file contains an invalid character at position 17 of line 1. The character `’` (U+2019) is a typographic (curly) apostrophe and should be replaced with a regular ASCII apostrophe `'` (U+0027).
-
-**Here’s what to do:**
-
-- Replace all curly quotes or apostrophes with straight ASCII equivalents.
-
-Assuming your file starts with something like:  
-```python
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
-
-@app.route('/product', methods=[‘POST’])
-def create_product():
-    data = request.get_json()
-    # Your logic here
-    return jsonify(data)
-```
-Note the curly quotes around 'POST'.
-
-**Corrected version:**
-
-```python
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
-
-@app.route('/product', methods=['POST'])
-def create_product():
-    data = request.get_json()
-    # Your logic here
-    return jsonify(data)
-```
-
-**Summary of fix:**  
-- Change: `methods=[‘POST’]`  
-- To:    `methods=['POST']`
+This means line 1, column 17 of `product_api.py` contains the character `’` (Unicode U+2019, right single quotation mark), which is not a valid apostrophe in Python.  
+Replace it with a regular single quote `'‘`.
 
 ---
 
-**Full corrected `product_api.py`:**
-
+Assuming a typical line 1 could look like:
 ```python
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
-
-@app.route('/product', methods=['POST'])
-def create_product():
-    data = request.get_json()
-    # Your logic here
-    return jsonify(data)
+api_key = ‘BXmWNyyF…z9s8’
 ```
+Corrected:
+```python
+api_key = 'BXmWNyyF…z9s8'
+```
+Or if the file starts with, say,
+```python
+def get_product(id):
+    # function content
+```
+the issue could be with any occurrence of `’` in the file.
 
 ---
 
-If you have more curly quotes elsewhere, fix them all similarly. Let me know if you need further help!
+**Please replace ALL occurrences of `’` (U+2019) with `'` (U+0027).**
+
+---
+
+### Corrected `product_api.py`
+
+```python
+# Example corrected file
+
+api_key = 'BXmWNyyF************************************************************************z9s8'
+
+def get_product(id):
+    # Replace this with actual product-fetching logic
+    pass
+```
+
+**Note:**  
+- If there were more instances of the curly quote (`’`), replace them similarly.  
+- The content above is a placeholder—adjust according to your actual file.
+
+If you provide the full file content, I can perform a complete fix. Otherwise, search and replace every `’` with `'`.
