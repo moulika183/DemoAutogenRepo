@@ -1,47 +1,127 @@
-The error you received indicates that your code is sending an invalid API key to the OpenAI API:
+Certainly! Based on the Jira story "Product Catalog API," here's a C# Web API controller for a basic Product Catalog. This sample includes a Product model, a simple in-memory repository for demonstration, and RESTful endpoints.
 
-> Incorrect API key provided: BXmWNyyF************************************************************************z9s8. You can find your API key at https://platform.openai.com/account/api-keys.
-
-To fix this, you must:
-
-1. Replace the incorrect API key with a valid one.
-2. Make sure your API key is not hardcoded (for security), use environment variables.
-
-Here's the corrected code (assuming the code is named `openai_example.py`):
-
-```python
-import os
-import openai
-
-# Get your API key securely from environment variables
-openai.api_key = os.getenv('OPENAI_API_KEY')
-
-if not openai.api_key:
-    raise ValueError("OPENAI_API_KEY environment variable not set. Set it in your environment before running this script.")
-
-response = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        {"role": "user", "content": "Hello, how are you?"}
-    ]
-)
-print(response.choices[0].message.content)
+**Product Model**
+```csharp
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; }        
+    public string Description { get; set; }
+    public decimal Price { get; set; }
+    public bool IsAvailable { get; set; }
+}
 ```
 
-### Usage instructions
+**In-Memory Product Repository:**  
+```csharp
+public interface IProductRepository
+{
+    IEnumerable<Product> GetAll();
+    Product Get(int id);
+    void Add(Product product);
+    void Update(Product product);
+    void Delete(int id);
+}
 
-1. **Set your API key in your environment** (never hardcode it):
-    ```bash
-    export OPENAI_API_KEY=sk-xxxxxx...   # Replace with your real API key
-    ```
+public class InMemoryProductRepository : IProductRepository
+{
+    private readonly List<Product> _products = new()
+    {
+        new Product { Id = 1, Name = "Laptop", Description = "Gaming laptop", Price = 1299.99m, IsAvailable = true },
+        new Product { Id = 2, Name = "Headphones", Description = "Noise cancelling", Price = 199.99m, IsAvailable = true }
+    };
 
-2. **Run your script**.
+    public IEnumerable<Product> GetAll() => _products;
 
----
+    public Product Get(int id) => _products.FirstOrDefault(p => p.Id == id);
 
-**Summary of changes:**
-- Removed the hardcoded API key.
-- Used environment variable for API key retrieval.
-- Added a check for missing API key.
+    public void Add(Product product)
+    {
+        product.Id = _products.Max(p => p.Id) + 1;
+        _products.Add(product);
+    }
 
-**If you post the original code, I can show a diff against your version.**
+    public void Update(Product product)
+    {
+        var existing = Get(product.Id);
+        if (existing == null) return;
+        existing.Name = product.Name;
+        existing.Description = product.Description;
+        existing.Price = product.Price;
+        existing.IsAvailable = product.IsAvailable;
+    }
+
+    public void Delete(int id)
+    {
+        var product = Get(id);
+        if (product != null)
+            _products.Remove(product);
+    }
+}
+```
+
+**Product Catalog Controller:**
+```csharp
+[Route("api/[controller]")]
+[ApiController]
+public class ProductCatalogController : ControllerBase
+{
+    private readonly IProductRepository _repository;
+
+    public ProductCatalogController()
+    {
+        // In production, register via DI
+        _repository = new InMemoryProductRepository();
+    }
+
+    [HttpGet]
+    public ActionResult<IEnumerable<Product>> GetProducts()
+    {
+        return Ok(_repository.GetAll());
+    }
+
+    [HttpGet("{id}")]
+    public ActionResult<Product> GetProduct(int id)
+    {
+        var product = _repository.Get(id);
+        if (product == null) return NotFound();
+        return Ok(product);
+    }
+
+    [HttpPost]
+    public ActionResult<Product> CreateProduct([FromBody] Product product)
+    {
+        _repository.Add(product);
+        return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
+    }
+
+    [HttpPut("{id}")]
+    public IActionResult UpdateProduct(int id, [FromBody] Product product)
+    {
+        if (id != product.Id) return BadRequest();
+        if (_repository.Get(id) == null) return NotFound();
+
+        _repository.Update(product);
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public IActionResult DeleteProduct(int id)
+    {
+        var existing = _repository.Get(id);
+        if (existing == null) return NotFound();
+
+        _repository.Delete(id);
+        return NoContent();
+    }
+}
+```
+
+**Usage:**  
+- GET /api/ProductCatalog: List all products  
+- GET /api/ProductCatalog/1: Get product with id=1  
+- POST /api/ProductCatalog: Add new product  
+- PUT /api/ProductCatalog/1: Update product with id=1  
+- DELETE /api/ProductCatalog/1: Delete product with id=1  
+
+Let me know if you want Entity Framework integration, Dtos, or further customization!
