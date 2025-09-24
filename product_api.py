@@ -1,127 +1,139 @@
-Certainly! Based on the Jira story "Product Catalog API," here's a C# Web API controller for a basic Product Catalog. This sample includes a Product model, a simple in-memory repository for demonstration, and RESTful endpoints.
+Certainly! Below is a sample implementation for a Product Catalog API in C# using ASP.NET Core (.NET 8+ assumed). This is a simple RESTful API with endpoints to manage products.
 
-**Product Model**
+**Entities/Product.cs**
 ```csharp
 public class Product
 {
     public int Id { get; set; }
-    public string Name { get; set; }        
-    public string Description { get; set; }
+    public string Name { get; set; } = null!;
+    public string Description { get; set; } = null!;
     public decimal Price { get; set; }
-    public bool IsAvailable { get; set; }
+    public string Category { get; set; } = null!;
 }
 ```
 
-**In-Memory Product Repository:**  
+**Data/IProductRepository.cs**
 ```csharp
 public interface IProductRepository
 {
-    IEnumerable<Product> GetAll();
-    Product Get(int id);
-    void Add(Product product);
-    void Update(Product product);
-    void Delete(int id);
+    Task<IEnumerable<Product>> GetAllAsync();
+    Task<Product?> GetByIdAsync(int id);
+    Task<Product> AddAsync(Product product);
+    Task<Product?> UpdateAsync(Product product);
+    Task<bool> DeleteAsync(int id);
 }
+```
 
+**Data/InMemoryProductRepository.cs**
+```csharp
 public class InMemoryProductRepository : IProductRepository
 {
-    private readonly List<Product> _products = new()
+    private readonly List<Product> _products = new();
+    private int _idCounter = 1;
+
+    public Task<IEnumerable<Product>> GetAllAsync()
+        => Task.FromResult(_products.AsEnumerable());
+
+    public Task<Product?> GetByIdAsync(int id)
+        => Task.FromResult(_products.FirstOrDefault(x => x.Id == id));
+
+    public Task<Product> AddAsync(Product product)
     {
-        new Product { Id = 1, Name = "Laptop", Description = "Gaming laptop", Price = 1299.99m, IsAvailable = true },
-        new Product { Id = 2, Name = "Headphones", Description = "Noise cancelling", Price = 199.99m, IsAvailable = true }
-    };
-
-    public IEnumerable<Product> GetAll() => _products;
-
-    public Product Get(int id) => _products.FirstOrDefault(p => p.Id == id);
-
-    public void Add(Product product)
-    {
-        product.Id = _products.Max(p => p.Id) + 1;
+        product.Id = _idCounter++;
         _products.Add(product);
+        return Task.FromResult(product);
     }
 
-    public void Update(Product product)
+    public Task<Product?> UpdateAsync(Product product)
     {
-        var existing = Get(product.Id);
-        if (existing == null) return;
+        var existing = _products.FirstOrDefault(x => x.Id == product.Id);
+        if (existing == null)
+            return Task.FromResult<Product?>(null);
+
         existing.Name = product.Name;
         existing.Description = product.Description;
         existing.Price = product.Price;
-        existing.IsAvailable = product.IsAvailable;
+        existing.Category = product.Category;
+
+        return Task.FromResult(existing);
     }
 
-    public void Delete(int id)
+    public Task<bool> DeleteAsync(int id)
     {
-        var product = Get(id);
-        if (product != null)
-            _products.Remove(product);
+        var product = _products.FirstOrDefault(x => x.Id == id);
+        if (product == null) return Task.FromResult(false);
+        _products.Remove(product);
+        return Task.FromResult(true);
     }
 }
 ```
 
-**Product Catalog Controller:**
+**Controllers/ProductsController.cs**
 ```csharp
-[Route("api/[controller]")]
 [ApiController]
-public class ProductCatalogController : ControllerBase
+[Route("api/[controller]")]
+public class ProductsController : ControllerBase
 {
     private readonly IProductRepository _repository;
-
-    public ProductCatalogController()
+    public ProductsController(IProductRepository repository)
     {
-        // In production, register via DI
-        _repository = new InMemoryProductRepository();
+        _repository = repository;
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<Product>> GetProducts()
-    {
-        return Ok(_repository.GetAll());
-    }
+    public async Task<IActionResult> Get() =>
+        Ok(await _repository.GetAllAsync());
 
     [HttpGet("{id}")]
-    public ActionResult<Product> GetProduct(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        var product = _repository.Get(id);
-        if (product == null) return NotFound();
-        return Ok(product);
+        var product = await _repository.GetByIdAsync(id);
+        return product == null ? NotFound() : Ok(product);
     }
 
     [HttpPost]
-    public ActionResult<Product> CreateProduct([FromBody] Product product)
+    public async Task<IActionResult> Create(Product product)
     {
-        _repository.Add(product);
-        return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
+        var created = await _repository.AddAsync(product);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     [HttpPut("{id}")]
-    public IActionResult UpdateProduct(int id, [FromBody] Product product)
+    public async Task<IActionResult> Update(int id, Product product)
     {
         if (id != product.Id) return BadRequest();
-        if (_repository.Get(id) == null) return NotFound();
 
-        _repository.Update(product);
-        return NoContent();
+        var updated = await _repository.UpdateAsync(product);
+        return updated == null ? NotFound() : Ok(updated);
     }
 
     [HttpDelete("{id}")]
-    public IActionResult DeleteProduct(int id)
+    public async Task<IActionResult> Delete(int id)
     {
-        var existing = _repository.Get(id);
-        if (existing == null) return NotFound();
-
-        _repository.Delete(id);
-        return NoContent();
+        var result = await _repository.DeleteAsync(id);
+        return result ? NoContent() : NotFound();
     }
 }
 ```
 
-**Usage:**  
-- GET /api/ProductCatalog: List all products  
-- GET /api/ProductCatalog/1: Get product with id=1  
-- POST /api/ProductCatalog: Add new product  
-- PUT /api/ProductCatalog/1: Update product with id=1  
-- DELETE /api/ProductCatalog/1: Delete product with id=1  
+**Program.cs** (for registration)
+```csharp
+var builder = WebApplication.CreateBuilder(args);
 
-Let me know if you want Entity Framework integration, Dtos, or further customization!
+builder.Services.AddSingleton<IProductRepository, InMemoryProductRepository>();
+builder.Services.AddControllers();
+
+var app = builder.Build();
+app.MapControllers();
+app.Run();
+```
+
+---
+
+**Summary:**  
+- Simple in-memory repository for demo purposes.
+- Endpoints: `GET`, `POST`, `PUT`, `DELETE` for Products.
+- Easy to adjust and extend.
+- You can swap `InMemoryProductRepository` for a persistence-based implementation.
+
+Let me know if you need DTOs, validation, pagination, or integration with a real database!
