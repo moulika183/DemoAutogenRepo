@@ -1,12 +1,13 @@
 ```csharp
 using Microsoft.AspNetCore.Mvc;
 using ProductService.Dtos;
+using ProductService.Models;
 using ProductService.Services;
 
 namespace ProductService.Controllers;
 
 [ApiController]
-[Route("api/products")]
+[Route("api/[controller]")]
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _service;
@@ -24,36 +25,33 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<ProductDto>> Get(Guid id)
+    public async Task<ActionResult<ProductDto>> GetById(Guid id)
     {
         var product = await _service.GetByIdAsync(id);
-        if (product is null)
-            return NotFound();
+        if (product == null) return NotFound();
         return Ok(product);
     }
 
     [HttpPost]
-    public async Task<ActionResult<ProductDto>> Create([FromBody] CreateProductDto dto)
+    public async Task<ActionResult<ProductDto>> Create(ProductCreateDto dto)
     {
-        var created = await _service.AddAsync(dto);
-        return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+        var created = await _service.CreateAsync(dto);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductDto dto)
+    public async Task<ActionResult<ProductDto>> Update(Guid id, ProductUpdateDto dto)
     {
-        var result = await _service.UpdateAsync(id, dto);
-        if (!result)
-            return NotFound();
-        return NoContent();
+        var updated = await _service.UpdateAsync(id, dto);
+        if (updated == null) return NotFound();
+        return Ok(updated);
     }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var result = await _service.DeleteAsync(id);
-        if (!result)
-            return NotFound();
+        var deleted = await _service.DeleteAsync(id);
+        if (!deleted) return NotFound();
         return NoContent();
     }
 }
