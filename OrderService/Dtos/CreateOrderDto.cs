@@ -1,24 +1,15 @@
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+```csharp
+namespace OrderService.Dtos;
 
-namespace OrderService.Dtos
+public class CreateOrderDto
 {
-    public class CreateOrderDto
-    {
-        [Required]
-        public string CustomerName { get; set; } = string.Empty;
-
-        [Required]
-        [MinLength(1)]
-        public List<CreateOrderItemDto> Items { get; set; } = new();
-    }
-
-    public class CreateOrderItemDto
-    {
-        [Required]
-        public string ProductId { get; set; } = string.Empty;
-
-        [Range(1, int.MaxValue)]
-        public int Quantity { get; set; }
-    }
+    public string CustomerName { get; set; } = string.Empty;
+    public List<OrderItemDto> Items { get; set; } = new();
 }
+
+public class OrderItemDto
+{
+    public string ProductId { get; set; } = string.Empty;
+    public int Quantity { get; set; }
+}
+```

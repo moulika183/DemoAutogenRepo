@@ -5,36 +5,40 @@ namespace ProductService.Repositories;
 
 public class InMemoryProductRepository : IProductRepository
 {
-    private readonly Dictionary<Guid, Product> _products = new();
+    private readonly List<Product> _products = new();
 
     public Task<IEnumerable<Product>> GetAllAsync()
-        => Task.FromResult(_products.Values.AsEnumerable());
+    {
+        return Task.FromResult<IEnumerable<Product>>(_products);
+    }
 
     public Task<Product?> GetByIdAsync(Guid id)
-        => Task.FromResult(_products.TryGetValue(id, out var product) ? product : null);
-
-    public Task<Product> AddAsync(Product product)
     {
-        product.Id = Guid.NewGuid();
-        _products[product.Id] = product;
+        var product = _products.FirstOrDefault(x => x.Id == id);
         return Task.FromResult(product);
     }
 
-    public Task<bool> UpdateAsync(Product product)
+    public Task AddAsync(Product product)
     {
-        if (!_products.ContainsKey(product.Id))
-            return Task.FromResult(false);
+        _products.Add(product);
+        return Task.CompletedTask;
+    }
 
-        _products[product.Id] = product;
-        return Task.FromResult(true);
+    public Task UpdateAsync(Product product)
+    {
+        var idx = _products.FindIndex(x => x.Id == product.Id);
+        if (idx >= 0)
+        {
+            _products[idx] = product;
+        }
+        return Task.CompletedTask;
     }
 
     public Task<bool> DeleteAsync(Guid id)
     {
-        if (!_products.ContainsKey(id))
-            return Task.FromResult(false);
-
-        _products.Remove(id);
+        var idx = _products.FindIndex(x => x.Id == id);
+        if (idx < 0) return Task.FromResult(false);
+        _products.RemoveAt(idx);
         return Task.FromResult(true);
     }
 }

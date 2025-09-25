@@ -1,35 +1,52 @@
 ```csharp
+using Microsoft.OpenApi.Models;
+using ProductService.Middleware;
 using ProductService.Repositories;
 using ProductService.Services;
-using ProductService.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Logging
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
+// Add services to the container.
+builder.Services.AddControllers();
 
-// Add services
+// Register CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
+
+// Register dependencies
 builder.Services.AddSingleton<IProductRepository, InMemoryProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService.Services.ProductService>();
 
-builder.Services.AddControllers();
+// Swagger setup
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddCors(options =>
+builder.Services.AddSwaggerGen(c =>
 {
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
-    });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Product Catalog API", Version = "v1" });
 });
 
+// Logging (default configuration is enough)
+
+// Build app
 var app = builder.Build();
 
-app.UseCors();
+// Global error handler middleware
 app.UseMiddleware<ErrorHandlingMiddleware>();
+
+// Use Swagger
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Product Catalog API v1"));
+
+// Use CORS
+app.UseCors("AllowAll");
+
+app.UseHttpsRedirection();
+
+app.UseAuthorization();
 
 app.MapControllers();
 

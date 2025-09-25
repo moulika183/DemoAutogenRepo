@@ -17,52 +17,69 @@ public class ProductService : IProductService
     public async Task<IEnumerable<ProductDto>> GetAllAsync()
     {
         var products = await _repo.GetAllAsync();
-        return products.Select(ToDto);
+        return products.Select(p => new ProductDto
+        {
+            Id = p.Id,
+            Name = p.Name,
+            Description = p.Description,
+            Price = p.Price
+        });
     }
 
     public async Task<ProductDto?> GetByIdAsync(Guid id)
     {
         var product = await _repo.GetByIdAsync(id);
-        return product is null ? null : ToDto(product);
-    }
-
-    public async Task<ProductDto> AddAsync(CreateProductDto dto)
-    {
-        var product = new Product
-        {
-            Name = dto.Name,
-            Description = dto.Description,
-            Price = dto.Price,
-            Category = dto.Category
-        };
-        product = await _repo.AddAsync(product);
-        return ToDto(product);
-    }
-
-    public async Task<bool> UpdateAsync(Guid id, UpdateProductDto dto)
-    {
-        var existing = await _repo.GetByIdAsync(id);
-        if (existing is null)
-            return false;
-
-        existing.Name = dto.Name;
-        existing.Description = dto.Description;
-        existing.Price = dto.Price;
-        existing.Category = dto.Category;
-        return await _repo.UpdateAsync(existing);
-    }
-
-    public async Task<bool> DeleteAsync(Guid id)
-        => await _repo.DeleteAsync(id);
-
-    private static ProductDto ToDto(Product product)
-        => new ProductDto
+        if (product == null) return null;
+        return new ProductDto
         {
             Id = product.Id,
             Name = product.Name,
             Description = product.Description,
-            Price = product.Price,
-            Category = product.Category
+            Price = product.Price
         };
+    }
+
+    public async Task<ProductDto> CreateAsync(ProductCreateDto dto)
+    {
+        var product = new Product
+        {
+            Id = Guid.NewGuid(),
+            Name = dto.Name,
+            Description = dto.Description,
+            Price = dto.Price
+        };
+        await _repo.AddAsync(product);
+        return new ProductDto
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Description = product.Description,
+            Price = product.Price
+        };
+    }
+
+    public async Task<ProductDto?> UpdateAsync(Guid id, ProductUpdateDto dto)
+    {
+        var product = await _repo.GetByIdAsync(id);
+        if (product == null) return null;
+
+        product.Name = dto.Name;
+        product.Description = dto.Description;
+        product.Price = dto.Price;
+        await _repo.UpdateAsync(product);
+
+        return new ProductDto
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Description = product.Description,
+            Price = product.Price
+        };
+    }
+
+    public async Task<bool> DeleteAsync(Guid id)
+    {
+        return await _repo.DeleteAsync(id);
+    }
 }
 ```

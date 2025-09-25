@@ -1,11 +1,16 @@
 ```csharp
+using System.ComponentModel.DataAnnotations;
+
 namespace ProductService.Dtos;
 
-public class ProductDto
+public class ProductCreateDto
 {
-    public Guid Id { get; set; }
+    [Required]
     public string Name { get; set; } = default!;
+
     public string? Description { get; set; }
+
+    [Range(0, double.MaxValue)]
     public decimal Price { get; set; }
 }
 ```
