@@ -1,53 +1,47 @@
-using OrderService.Dtos;
+```csharp
 using OrderService.Models;
+using OrderService.Dtos;
 using OrderService.Repositories;
 
-namespace OrderService.Services
+namespace OrderService.Services;
+
+public class OrderService : IOrderService
 {
-    public class OrderService : IOrderService
+    private readonly IOrderRepository _repo;
+
+    public OrderService(IOrderRepository repo)
     {
-        private readonly IOrderRepository _repo;
+        _repo = repo;
+    }
 
-        public OrderService(IOrderRepository repo)
-        {
-            _repo = repo;
-        }
+    public async Task<OrderResponseDto> PlaceOrderAsync(CreateOrderDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.CustomerName) || dto.Items is null || !dto.Items.Any())
+            throw new ArgumentException("Invalid order data.");
 
-        public async Task<OrderDto> PlaceOrderAsync(CreateOrderDto dto)
+        var order = new Order
         {
-            var order = new Order
+            CustomerName = dto.CustomerName,
+            Items = dto.Items.Select(i => new OrderItem
             {
-                Id = Guid.NewGuid(),
-                CustomerName = dto.CustomerName,
-                CreatedAt = DateTime.UtcNow,
-                Items = dto.Items.Select(i => new OrderItem
-                {
-                    ProductId = i.ProductId,
-                    Quantity = i.Quantity
-                }).ToList()
-            };
+                ProductId = i.ProductId,
+                Quantity = i.Quantity
+            }).ToList()
+        };
 
-            await _repo.AddOrderAsync(order);
+        var created = await _repo.CreateAsync(order);
 
-            return ToDto(order);
-        }
-
-        public async Task<OrderDto?> GetOrderByIdAsync(Guid id)
+        return new OrderResponseDto
         {
-            var order = await _repo.GetOrderByIdAsync(id);
-            return order == null ? null : ToDto(order);
-        }
-
-        private static OrderDto ToDto(Order order) => new OrderDto
-        {
-            Id = order.Id,
-            CustomerName = order.CustomerName,
-            CreatedAt = order.CreatedAt,
-            Items = order.Items.Select(it => new OrderItemDto
+            Id = created.Id,
+            CreatedAt = created.CreatedAt,
+            CustomerName = created.CustomerName,
+            Items = created.Items.Select(x => new OrderItemDto
             {
-                ProductId = it.ProductId,
-                Quantity = it.Quantity
+                ProductId = x.ProductId,
+                Quantity = x.Quantity
             }).ToList()
         };
     }
 }
+```
