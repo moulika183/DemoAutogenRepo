@@ -1,22 +1,18 @@
+```csharp
 using OrderService.Models;
-using System.Collections.Concurrent;
 
-namespace OrderService.Repositories
+namespace OrderService.Repositories;
+
+public class InMemoryOrderRepository : IOrderRepository
 {
-    public class InMemoryOrderRepository : IOrderRepository
+    private static readonly List<Order> Orders = new();
+
+    public Task<Order> CreateAsync(Order order)
     {
-        private readonly ConcurrentDictionary<Guid, Order> _orders = new();
-
-        public Task AddOrderAsync(Order order)
-        {
-            _orders[order.Id] = order;
-            return Task.CompletedTask;
-        }
-
-        public Task<Order?> GetOrderByIdAsync(Guid id)
-        {
-            _orders.TryGetValue(id, out var order);
-            return Task.FromResult(order);
-        }
+        order.Id = Guid.NewGuid();
+        order.CreatedAt = DateTime.UtcNow;
+        Orders.Add(order);
+        return Task.FromResult(order);
     }
 }
+```
