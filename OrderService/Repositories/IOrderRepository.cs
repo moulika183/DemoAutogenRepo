@@ -1,10 +1,10 @@
+```csharp
 using OrderService.Models;
 
-namespace OrderService.Repositories
+namespace OrderService.Repositories;
+
+public interface IOrderRepository
 {
-    public interface IOrderRepository
-    {
-        Task AddOrderAsync(Order order);
-        Task<Order?> GetOrderByIdAsync(Guid id);
-    }
+    Task<Order> CreateAsync(Order order);
 }
+```
