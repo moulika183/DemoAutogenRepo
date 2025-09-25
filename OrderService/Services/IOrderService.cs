@@ -1,10 +1,10 @@
+```csharp
 using OrderService.Dtos;
 
-namespace OrderService.Services
+namespace OrderService.Services;
+
+public interface IOrderService
 {
-    public interface IOrderService
-    {
-        Task<OrderDto> PlaceOrderAsync(CreateOrderDto dto);
-        Task<OrderDto?> GetOrderByIdAsync(Guid id);
-    }
+    Task<OrderResponseDto> PlaceOrderAsync(CreateOrderDto dto);
 }
+```
