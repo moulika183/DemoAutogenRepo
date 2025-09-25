@@ -1,12 +1,7 @@
 ```csharp
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using ProductService.Middleware;
 using ProductService.Repositories;
 using ProductService.Services;
+using ProductService.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,41 +9,27 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
-// Add services to the container.
+// Add services
+builder.Services.AddSingleton<IProductRepository, InMemoryProductRepository>();
+builder.Services.AddScoped<IProductService, ProductService.Services.ProductService>();
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSingleton<IProductRepository, ProductRepository>();
-builder.Services.AddScoped<IProductService, ProductService.Services.ProductService>();
-
-// Add CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin()
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
     });
 });
 
 var app = builder.Build();
 
-// Add global error middleware
+app.UseCors();
 app.UseMiddleware<ErrorHandlingMiddleware>();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseCors("AllowAll");
-
-app.UseRouting();
-
-app.UseAuthorization();
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.MapControllers();
 
