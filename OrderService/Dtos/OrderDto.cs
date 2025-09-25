@@ -1,16 +1,17 @@
 using System;
+using System.Collections.Generic;
 
-namespace OrderService.Models
+namespace OrderService.Dtos
 {
-    public class Order
+    public class OrderDto
     {
         public Guid Id { get; set; }
         public string CustomerName { get; set; } = string.Empty;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public List<OrderItem> Items { get; set; } = new();
+        public DateTime CreatedAt { get; set; }
+        public List<OrderItemDto> Items { get; set; } = new();
     }
 
-    public class OrderItem
+    public class OrderItemDto
     {
         public string ProductId { get; set; } = string.Empty;
         public int Quantity { get; set; }

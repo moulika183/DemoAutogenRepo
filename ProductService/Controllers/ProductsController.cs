@@ -6,30 +6,28 @@ using ProductService.Services;
 namespace ProductService.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/products")]
 public class ProductsController : ControllerBase
 {
-    private readonly IProductService _productService;
-    private readonly ILogger<ProductsController> _logger;
+    private readonly IProductService _service;
 
-    public ProductsController(IProductService productService, ILogger<ProductsController> logger)
+    public ProductsController(IProductService service)
     {
-        _productService = productService;
-        _logger = logger;
+        _service = service;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll()
     {
-        var products = await _productService.GetAllAsync();
+        var products = await _service.GetAllAsync();
         return Ok(products);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<ProductDto>> GetById(Guid id)
+    public async Task<ActionResult<ProductDto>> Get(Guid id)
     {
-        var product = await _productService.GetByIdAsync(id);
-        if (product == null)
+        var product = await _service.GetByIdAsync(id);
+        if (product is null)
             return NotFound();
         return Ok(product);
     }
@@ -37,24 +35,24 @@ public class ProductsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ProductDto>> Create([FromBody] CreateProductDto dto)
     {
-        var newProduct = await _productService.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetById), new { id = newProduct.Id }, newProduct);
+        var created = await _service.AddAsync(dto);
+        return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<ProductDto>> Update(Guid id, [FromBody] UpdateProductDto dto)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductDto dto)
     {
-        var updatedProduct = await _productService.UpdateAsync(id, dto);
-        if (updatedProduct == null)
+        var result = await _service.UpdateAsync(id, dto);
+        if (!result)
             return NotFound();
-        return Ok(updatedProduct);
+        return NoContent();
     }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var deleted = await _productService.DeleteAsync(id);
-        if (!deleted)
+        var result = await _service.DeleteAsync(id);
+        if (!result)
             return NotFound();
         return NoContent();
     }

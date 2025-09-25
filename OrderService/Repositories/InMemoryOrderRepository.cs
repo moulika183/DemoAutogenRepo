@@ -1,32 +1,22 @@
-
-```csharp
 using OrderService.Models;
+using System.Collections.Concurrent;
 
 namespace OrderService.Repositories
 {
     public class InMemoryOrderRepository : IOrderRepository
     {
-        private static readonly List<Order> _orders = new();
-        private static readonly SemaphoreSlim _lock = new(1, 1);
+        private readonly ConcurrentDictionary<Guid, Order> _orders = new();
 
-        public async Task AddOrderAsync(Order order)
+        public Task AddOrderAsync(Order order)
         {
-            await _lock.WaitAsync();
-            try
-            {
-                _orders.Add(order);
-            }
-            finally
-            {
-                _lock.Release();
-            }
+            _orders[order.Id] = order;
+            return Task.CompletedTask;
         }
 
-        public async Task<Order?> GetOrderByIdAsync(Guid orderId)
+        public Task<Order?> GetOrderByIdAsync(Guid id)
         {
-            await Task.Yield();
-            return _orders.FirstOrDefault(o => o.Id == orderId);
+            _orders.TryGetValue(id, out var order);
+            return Task.FromResult(order);
         }
     }
 }
-```

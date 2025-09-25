@@ -1,6 +1,6 @@
 ```csharp
 using System.Net;
-using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace ProductService.Middleware;
 
@@ -15,7 +15,7 @@ public class ErrorHandlingMiddleware
         _logger = logger;
     }
 
-    public async Task InvokeAsync(HttpContext context)
+    public async Task Invoke(HttpContext context)
     {
         try
         {
@@ -23,18 +23,11 @@ public class ErrorHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An exception occurred while processing the request.");
-            await HandleExceptionAsync(context, ex);
+            _logger.LogError(ex, "Unhandled exception");
+            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync($"{{\"error\":\"{ex.Message}\"}}");
         }
-    }
-
-    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
-    {
-        var code = HttpStatusCode.InternalServerError;
-        var result = JsonSerializer.Serialize(new { error = "An unexpected error occurred." });
-        context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int)code;
-        return context.Response.WriteAsync(result);
     }
 }
 ```

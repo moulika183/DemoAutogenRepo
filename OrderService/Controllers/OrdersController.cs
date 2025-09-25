@@ -1,8 +1,6 @@
-
-```csharp
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using OrderService.Dtos;
+using OrderService.Models;
 using OrderService.Services;
 
 namespace OrderService.Controllers
@@ -11,35 +9,40 @@ namespace OrderService.Controllers
     [Route("api/[controller]")]
     public class OrdersController : ControllerBase
     {
-        private readonly IOrderService _orderService;
+        private readonly IOrderService _service;
         private readonly ILogger<OrdersController> _logger;
 
-        public OrdersController(IOrderService orderService, ILogger<OrdersController> logger)
+        public OrdersController(IOrderService service, ILogger<OrdersController> logger)
         {
-            _orderService = orderService;
+            _service = service;
             _logger = logger;
         }
 
-        // POST api/orders
+        /// <summary>
+        /// Places a new order.
+        /// </summary>
         [HttpPost]
-        public async Task<ActionResult<OrderResponseDto>> PlaceOrder([FromBody] PlaceOrderRequestDto request)
+        public async Task<ActionResult<OrderDto>> PlaceOrder([FromBody] CreateOrderDto dto)
         {
-            _logger.LogInformation("Received place order request for customer {CustomerName}", request.CustomerName);
-            var order = await _orderService.PlaceOrderAsync(request);
+            if (dto == null)
+                return BadRequest("Order data is required.");
+
+            var order = await _service.PlaceOrderAsync(dto);
+
             return CreatedAtAction(nameof(GetOrderById), new { id = order.Id }, order);
         }
 
-        // GET api/orders/{id}
-        [HttpGet("{id:guid}")]
-        public async Task<ActionResult<OrderResponseDto>> GetOrderById([FromRoute] Guid id)
+        /// <summary>
+        /// Gets an order by Id.
+        /// </summary>
+        [HttpGet("{id}")]
+        public async Task<ActionResult<OrderDto>> GetOrderById(Guid id)
         {
-            var order = await _orderService.GetOrderByIdAsync(id);
+            var order = await _service.GetOrderByIdAsync(id);
             if (order == null)
-            {
                 return NotFound();
-            }
-            return order;
+
+            return Ok(order);
         }
     }
 }
-```
