@@ -1,10 +1,9 @@
 using ProductService.Models;
 
-namespace ProductService.Repositories
+namespace ProductService.Repositories;
+
+public interface IProductRepository
 {
-    public interface IProductRepository
-    {
-        Task<IEnumerable<Product>> GetAllAsync();
-        Task<Product?> GetByIdAsync(Guid id);
-    }
+    Task<IEnumerable<Product>> GetAllAsync();
+    Task<Product?> GetByIdAsync(Guid id);
 }
