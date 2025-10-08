@@ -1,9 +1,10 @@
-
 using OrderService.Dtos;
 
-namespace OrderService.Services;
-
-public interface IOrderService
+namespace OrderService.Services
 {
-    Task<OrderResponseDto> PlaceOrderAsync(PlaceOrderRequestDto dto, CancellationToken cancellationToken);
+    public interface IOrderService
+    {
+        Task<OrderDto> PlaceOrderAsync(PlaceOrderRequestDto request);
+        Task<OrderDto?> GetOrderByIdAsync(Guid id);
+    }
 }
