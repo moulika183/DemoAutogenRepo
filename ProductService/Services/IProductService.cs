@@ -1,10 +1,9 @@
 using ProductService.Dtos;
 
-namespace ProductService.Services
+namespace ProductService.Services;
+
+public interface IProductService
 {
-    public interface IProductService
-    {
-        Task<IEnumerable<ProductDto>> GetAllProductsAsync();
-        Task<ProductDto?> GetProductByIdAsync(Guid id);
-    }
+    Task<IEnumerable<ProductDto>> GetAllAsync();
+    Task<ProductDto?> GetByIdAsync(Guid id);
 }
