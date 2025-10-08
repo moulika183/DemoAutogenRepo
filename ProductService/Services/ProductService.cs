@@ -1,43 +1,41 @@
 using ProductService.Repositories;
 using ProductService.Dtos;
 
-namespace ProductService.Services
+namespace ProductService.Services;
+
+public class ProductService : IProductService
 {
-    public class ProductService : IProductService
+    private readonly IProductRepository _repository;
+
+    public ProductService(IProductRepository repository)
     {
-        private readonly IProductRepository _repo;
+        _repository = repository;
+    }
 
-        public ProductService(IProductRepository repo)
+    public async Task<IEnumerable<ProductDto>> GetAllAsync()
+    {
+        var products = await _repository.GetAllAsync();
+        return products.Select(p => new ProductDto
         {
-            _repo = repo;
-        }
+            Id = p.Id,
+            Name = p.Name,
+            Description = p.Description,
+            Price = p.Price,
+            Category = p.Category
+        });
+    }
 
-        public async Task<IEnumerable<ProductDto>> GetAllProductsAsync()
+    public async Task<ProductDto?> GetByIdAsync(Guid id)
+    {
+        var product = await _repository.GetByIdAsync(id);
+        if (product == null) return null;
+        return new ProductDto
         {
-            var entities = await _repo.GetAllAsync();
-            return entities.Select(e => new ProductDto
-            {
-                Id = e.Id,
-                Name = e.Name,
-                Description = e.Description,
-                Price = e.Price,
-                Category = e.Category
-            });
-        }
-
-        public async Task<ProductDto?> GetProductByIdAsync(Guid id)
-        {
-            var entity = await _repo.GetByIdAsync(id);
-            if (entity == null) return null;
-
-            return new ProductDto
-            {
-                Id = entity.Id,
-                Name = entity.Name,
-                Description = entity.Description,
-                Price = entity.Price,
-                Category = entity.Category
-            };
-        }
+            Id = product.Id,
+            Name = product.Name,
+            Description = product.Description,
+            Price = product.Price,
+            Category = product.Category
+        };
     }
 }
