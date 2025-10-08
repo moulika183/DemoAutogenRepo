@@ -1,40 +1,44 @@
-
 using Microsoft.AspNetCore.Mvc;
 using OrderService.Dtos;
+using OrderService.Models;
 using OrderService.Services;
 
-namespace OrderService.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class OrdersController : ControllerBase
+namespace OrderService.Controllers
 {
-    private readonly IOrderService _orderService;
-    private readonly ILogger<OrdersController> _logger;
-
-    public OrdersController(IOrderService orderService, ILogger<OrdersController> logger)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class OrdersController : ControllerBase
     {
-        _orderService = orderService;
-        _logger = logger;
-    }
+        private readonly IOrderService _orderService;
+        private readonly ILogger<OrdersController> _logger;
 
-    /// <summary>
-    /// Place a new order
-    /// </summary>
-    /// <param name="dto">Order request DTO</param>
-    /// <param name="cancellationToken"></param>
-    /// <returns>Order details</returns>
-    [HttpPost]
-    public async Task<ActionResult<OrderResponseDto>> PlaceOrder(
-        [FromBody] PlaceOrderRequestDto dto, 
-        CancellationToken cancellationToken)
-    {
-        if (!ModelState.IsValid)
+        public OrdersController(IOrderService orderService, ILogger<OrdersController> logger)
         {
-            return BadRequest(ModelState);
+            _orderService = orderService;
+            _logger = logger;
         }
 
-        var result = await _orderService.PlaceOrderAsync(dto, cancellationToken);
-        return CreatedAtAction(nameof(PlaceOrder), new { id = result.Id }, result);
+        [HttpPost]
+        public async Task<ActionResult<OrderDto>> PlaceOrder([FromBody] PlaceOrderRequestDto request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var createdOrder = await _orderService.PlaceOrderAsync(request);
+            return CreatedAtAction(nameof(GetOrderById), new { id = createdOrder.Id }, createdOrder);
+        }
+
+        // Helper endpoint for CreatedAtAction (not specified in story, minimal implementation)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<OrderDto>> GetOrderById(Guid id)
+        {
+            var order = await _orderService.GetOrderByIdAsync(id);
+            if (order == null)
+                return NotFound();
+
+            return Ok(order);
+        }
     }
 }
