@@ -1,19 +1,22 @@
-
 using OrderService.Models;
+using System.Collections.Concurrent;
 
-namespace OrderService.Repositories;
-
-public class InMemoryOrderRepository : IOrderRepository
+namespace OrderService.Repositories
 {
-    private readonly List<Order> _orders = new();
-    private readonly object _lock = new();
-
-    public Task<Order> AddAsync(Order order, CancellationToken cancellationToken)
+    public class InMemoryOrderRepository : IOrderRepository
     {
-        lock (_lock)
+        private readonly ConcurrentDictionary<Guid, Order> _orders = new();
+
+        public Task AddAsync(Order order)
         {
-            _orders.Add(order);
+            _orders[order.Id] = order;
+            return Task.CompletedTask;
         }
-        return Task.FromResult(order);
+
+        public Task<Order?> GetByIdAsync(Guid id)
+        {
+            _orders.TryGetValue(id, out var order);
+            return Task.FromResult(order);
+        }
     }
 }
