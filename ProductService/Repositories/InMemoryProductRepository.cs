@@ -1,40 +1,29 @@
 using ProductService.Models;
 
-namespace ProductService.Repositories
+namespace ProductService.Repositories;
+
+public class InMemoryProductRepository : IProductRepository
 {
-    public class InMemoryProductRepository : IProductRepository
+    private readonly List<Product> _products;
+
+    public InMemoryProductRepository()
     {
-        private readonly List<Product> _products;
-
-        public InMemoryProductRepository()
+        _products = new List<Product>
         {
-            // Seed with some in-memory data
-            _products = new List<Product>
-            {
-                new Product
-                {
-                    Id = Guid.NewGuid(), Name = "Coffee Mug", Description = "A ceramic mug.", Price = 7.99M, Category = "Kitchenware", CreatedAt = DateTime.UtcNow.AddDays(-2)
-                },
-                new Product
-                {
-                    Id = Guid.NewGuid(), Name = "Notebook", Description = "A ruled notebook.", Price = 2.49M, Category = "Stationery", CreatedAt = DateTime.UtcNow.AddDays(-10)
-                },
-                new Product
-                {
-                    Id = Guid.NewGuid(), Name = "Bluetooth Speaker", Description = "Wireless speaker.", Price = 49.99M, Category = "Electronics", CreatedAt = DateTime.UtcNow.AddDays(-5)
-                },
-            };
-        }
+            new Product { Id = Guid.NewGuid(), Name = "Book", Description = "A great book", Price = 10.99M, Category = "Books" },
+            new Product { Id = Guid.NewGuid(), Name = "Laptop", Description = "A powerful laptop", Price = 1500.00M, Category = "Electronics" },
+            new Product { Id = Guid.NewGuid(), Name = "Headphones", Description = "Noise-cancelling", Price = 200.00M, Category = "Electronics" }
+        };
+    }
 
-        public Task<IEnumerable<Product>> GetAllAsync()
-        {
-            return Task.FromResult(_products.AsEnumerable());
-        }
+    public Task<IEnumerable<Product>> GetAllAsync()
+    {
+        return Task.FromResult(_products.AsEnumerable());
+    }
 
-        public Task<Product?> GetByIdAsync(Guid id)
-        {
-            var product = _products.FirstOrDefault(p => p.Id == id);
-            return Task.FromResult(product);
-        }
+    public Task<Product?> GetByIdAsync(Guid id)
+    {
+        var product = _products.FirstOrDefault(p => p.Id == id);
+        return Task.FromResult(product);
     }
 }
