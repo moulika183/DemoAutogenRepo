@@ -1,54 +1,66 @@
-
 using OrderService.Dtos;
 using OrderService.Models;
 using OrderService.Repositories;
 
-namespace OrderService.Services;
-
-public class OrderService : IOrderService
+namespace OrderService.Services
 {
-    private readonly IOrderRepository _orderRepository;
-    private readonly ILogger<OrderService> _logger;
-
-    public OrderService(IOrderRepository orderRepository, ILogger<OrderService> logger)
+    public class OrderService : IOrderService
     {
-        _orderRepository = orderRepository;
-        _logger = logger;
-    }
+        private readonly IOrderRepository _orderRepository;
 
-    public async Task<OrderResponseDto> PlaceOrderAsync(PlaceOrderRequestDto dto, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Placing a new order for {Customer}", dto.CustomerName);
-
-        var order = new Order
+        public OrderService(IOrderRepository orderRepository)
         {
-            Id = Guid.NewGuid(),
-            CustomerName = dto.CustomerName,
-            CreatedAt = DateTime.UtcNow,
-            Items = dto.Items.Select(i => new OrderItem
-            {
-                ProductName = i.ProductName,
-                Quantity = i.Quantity,
-                UnitPrice = i.UnitPrice
-            }).ToList()
-        };
+            _orderRepository = orderRepository;
+        }
 
-        order.TotalAmount = order.Items.Sum(i => i.Quantity * i.UnitPrice);
-
-        await _orderRepository.AddAsync(order, cancellationToken);
-
-        return new OrderResponseDto
+        public async Task<OrderDto> PlaceOrderAsync(PlaceOrderRequestDto request)
         {
-            Id = order.Id,
-            CustomerName = order.CustomerName,
-            CreatedAt = order.CreatedAt,
-            TotalAmount = order.TotalAmount,
-            Items = order.Items.Select(i => new OrderItemResponseDto
+            var order = new Order
             {
-                ProductName = i.ProductName,
-                Quantity = i.Quantity,
-                UnitPrice = i.UnitPrice
-            }).ToList()
-        };
+                Id = Guid.NewGuid(),
+                CustomerName = request.CustomerName,
+                OrderDate = DateTime.UtcNow,
+                Items = request.Items.Select(i => new OrderItem
+                {
+                    ProductId = i.ProductId,
+                    Quantity = i.Quantity,
+                    UnitPrice = i.UnitPrice
+                }).ToList()
+            };
+
+            await _orderRepository.AddAsync(order);
+
+            return new OrderDto
+            {
+                Id = order.Id,
+                CustomerName = order.CustomerName,
+                OrderDate = order.OrderDate,
+                Items = order.Items.Select(x => new OrderItemDto
+                {
+                    ProductId = x.ProductId,
+                    Quantity = x.Quantity,
+                    UnitPrice = x.UnitPrice
+                }).ToList()
+            };
+        }
+
+        public async Task<OrderDto?> GetOrderByIdAsync(Guid id)
+        {
+            var order = await _orderRepository.GetByIdAsync(id);
+            if (order == null) return null;
+
+            return new OrderDto
+            {
+                Id = order.Id,
+                CustomerName = order.CustomerName,
+                OrderDate = order.OrderDate,
+                Items = order.Items.Select(x => new OrderItemDto
+                {
+                    ProductId = x.ProductId,
+                    Quantity = x.Quantity,
+                    UnitPrice = x.UnitPrice
+                }).ToList()
+            };
+        }
     }
 }
